@@ -1,4 +1,4 @@
-#include <iostream>
+#include <bit/stdc++.h>
 #include <conio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -19,7 +19,8 @@ char player_X, player_O;
 int  win;
 char player_move, mark;
 int  O_move_count;
-char O_paths[5][50] = {'\0'}; //this will be a stack for storing computer's moves.
+//char O_paths[5][50] = {'\0'}; //this will be a stack for storing computer's moves.
+stack<string> O_paths;
 char gameboard[10]; //this is a c string. 10th one is for null char.
 char auto_train;
 int  auto_train_count, total_training_match;
@@ -60,9 +61,10 @@ start:
     match = 1;
     CENACEscore = 0;
     humanScore = 0;
-
+    
     while(true)
     {
+        clearStack(O_paths);
         player = 1;
         newboard();
         choose_player();
@@ -383,8 +385,11 @@ void inputmove()
             }
             else continue;
         }
-
-
+        
+        //pushing the moves into a stack
+        string gameboard_string(gameboard);
+        O_paths.push(gameboard_string + "," + player_move);
+        cout << O_paths.top();
 
 //        FILE* file;
 //        int  i, j = 0, k;
@@ -595,6 +600,75 @@ int space_in_board()
 
 void updateLearning_data()
 {
+    ofstream csvFile("Learning_Data.csv");
+
+    // Check if the file opened successfully
+    if (!csvFile.is_open()) {
+        cerr << "\n\tError opening file!" << endl;
+        return 1;
+    }
+
+    while(!O_paths.empty())
+    {
+        string path = O_paths.pop();
+        string board;
+        int given_move;
+        bool flag  = true;
+        for(auto u: path)
+        {
+            if(flag)
+                board += u;
+            else
+                given_move = (int)(u - 48);
+            
+           if(u == ',')
+            {   
+                flag = false;
+            }
+            
+        }
+
+        // Write a single line string to the CSV file
+        string values = "-1,2,2,2,-1,2,2,2,2"; //we will get this from the hash map
+        string csv_line = board;
+        int counter = 0;
+        string tmp;
+        for(auto u: values)
+        {
+            if(u!= ','){
+                tmp += u;
+                continue;
+            }
+            if(u == ',')
+            {
+                counter ++;
+                int intpoint = stoi(tmp);
+                if(counter == given_move)
+                {
+                    if(win == 1 && player == 1) intpoint += WIN_REWORD; //player 1 = CENACE
+                    else if(win == -1) intpoint += DRAW_REWORD;
+                    else intpoint -= PUNISHMENT;
+
+                    if(intpoint >= MAX_POINT) intpoint = MAX_POINT;
+                    else if(intpoint <= MIN_POINT) intpoint = MIN_POINT;
+                }
+                csv_line += "," + to_string(intpoint);
+                tmp = "";
+
+            }
+           
+
+        }
+
+        csvFile << csv_line;
+    }
+
+    // Close the file
+    csvFile.close();
+
+
+
+
 
     //The commented code below is the original one from the C version.
     //Rewrite this function and use CSV file for storing and updating learning data
@@ -885,4 +959,3 @@ void scoreUpdate()
         humanScore += DRAW_REWORD;
     }
 }
-
