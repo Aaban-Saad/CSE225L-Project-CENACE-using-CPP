@@ -21,7 +21,9 @@ char player_move, mark;
 int  O_move_count;
 //char O_paths[5][50] = {'\0'}; //this will be a stack for storing computer's moves.
 stack<string> O_paths;
-char gameboard[10]; //this is a c string. 10th one is for null char.
+set<string> bst;
+unordered_map<string, string> hashMap;
+char gameboard[9];
 char auto_train;
 int  auto_train_count, total_training_match;
 int  exit_CENACE;
@@ -64,6 +66,22 @@ start:
 
     while(true)
     {
+        // Constructing the tree
+        bst.clear();
+        ifstream file("Learning_Data.csv");
+        if (!file.is_open())
+        {
+            cerr << "\n\tError opening the file!\n";
+        }
+        string line;
+        while (getline(file, line)) {
+            string key = line.substr(0, 9);
+            string value = line.substr(9, line.length()-1);
+            bst.insert(key);
+            hashMap.insert({key, value});
+        }
+
+        // Clearing previous stack
         while(!O_paths.empty())
             O_paths.pop();
 
@@ -388,8 +406,18 @@ void inputmove()
             else continue;
         }
 
+
         //pushing the moves into a stack
         string gameboard_string(gameboard);
+
+        // Replacing black spaces in th board with '-'s. Easy to recognize.
+        for(int i = 0; i < gameboard_string.length(); i++)
+        {
+            if(gameboard_string[i] == ' ')
+            {
+                gameboard_string[i] = '-';
+            }
+        }
         O_paths.push(gameboard_string + "," + player_move);
         cout << O_paths.top();
 
@@ -602,10 +630,11 @@ int space_in_board()
 
 void updateLearning_data()
 {
-    ofstream csvFile("Learning_Data.csv");
+    ofstream csvFile("Learning_Data.csv", ios_base::app);
 
     // Check if the file opened successfully
-    if (!csvFile.is_open()) {
+    if (!csvFile.is_open())
+    {
         cerr << "\n\tError opening file!" << endl;
     }
 
@@ -625,7 +654,7 @@ void updateLearning_data()
             else
                 given_move = (int)(u - 48);
 
-           if(u == ',')
+            if(u == ',')
             {
                 flag = false;
             }
@@ -633,13 +662,19 @@ void updateLearning_data()
         }
 
         // Write a single line string to the CSV file
-        string values = "-1,2,2,2,-1,2,2,2,2"; //we will get this from the hash map
+        string values = "-1,2,2,2,-1,2,2,2,2,"; //we will get this from the hash map
+        // and, yes, the last comma is important
         string csv_line = board;
         int counter = 0;
         string tmp;
+
+        // Constructing the string for CSV file
+
+        //THIS WILL NOT WORK. NEED TO UPDATE THE TREE AND THEN WRITE THE TREE IN THE CSV FILE
         for(auto u: values)
         {
-            if(u!= ','){
+            if(u!= ',')
+            {
                 tmp += u;
                 continue;
             }
@@ -656,15 +691,12 @@ void updateLearning_data()
                     if(intpoint >= MAX_POINT) intpoint = MAX_POINT;
                     else if(intpoint <= MIN_POINT) intpoint = MIN_POINT;
                 }
-                csv_line += "," + to_string(intpoint);
+                csv_line += to_string(intpoint) + ",";
                 tmp = "";
 
             }
-
-
         }
-
-        csvFile << csv_line;
+        csvFile << csv_line + "\n";
     }
 
     // Close the file
