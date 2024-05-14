@@ -1,8 +1,8 @@
-#include <bit/stdc++.h>
+#include <bits/stdc++.h>
 #include <conio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
+//#include <stdlib.h>
+//#include <time.h>
+//#include <string.h>
 #include <windows.h>
 
 #define INITIAL_POINT "2"
@@ -61,10 +61,12 @@ start:
     match = 1;
     CENACEscore = 0;
     humanScore = 0;
-    
+
     while(true)
     {
-        clearStack(O_paths);
+        while(!O_paths.empty())
+            O_paths.pop();
+
         player = 1;
         newboard();
         choose_player();
@@ -181,10 +183,10 @@ start:
 
         //Printing all paths
         cout << "\nFile paths: ";
-        for(int i = 0; i < O_move_count; i++)
-        {
-            cout << "\n   %s", O_paths[i];
-        }
+//        for(int i = 0; i < O_move_count; i++)
+//        {
+//            cout << "\n   %s", O_paths[i];
+//        }
 
         //Asking user if he/she wants to play again
         if(auto_train != 'y' && auto_train != 'Y')
@@ -385,7 +387,7 @@ void inputmove()
             }
             else continue;
         }
-        
+
         //pushing the moves into a stack
         string gameboard_string(gameboard);
         O_paths.push(gameboard_string + "," + player_move);
@@ -605,12 +607,14 @@ void updateLearning_data()
     // Check if the file opened successfully
     if (!csvFile.is_open()) {
         cerr << "\n\tError opening file!" << endl;
-        return 1;
     }
 
     while(!O_paths.empty())
     {
-        string path = O_paths.pop();
+        cout << "\n\t" << O_paths.top();
+        string path = O_paths.top();
+        O_paths.pop();
+//        string path = O_paths.pop();
         string board;
         int given_move;
         bool flag  = true;
@@ -620,12 +624,12 @@ void updateLearning_data()
                 board += u;
             else
                 given_move = (int)(u - 48);
-            
+
            if(u == ',')
-            {   
+            {
                 flag = false;
             }
-            
+
         }
 
         // Write a single line string to the CSV file
@@ -656,7 +660,7 @@ void updateLearning_data()
                 tmp = "";
 
             }
-           
+
 
         }
 
