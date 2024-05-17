@@ -24,7 +24,7 @@ stack<string> O_paths;
 set<string> bst;
 unordered_map<string, string> hashMap;
 char gameboard[9];
-char auto_train;
+char auto_train = 'n';
 int  auto_train_count, total_training_match;
 int  exit_CENACE;
 int  match, CENACEscore, humanScore;
@@ -40,13 +40,14 @@ void menu();
 void CENACE_intro();
 void updateGraphing_data();
 void scoreUpdate();
+vector<string> splitString(const string &str, char delimiter);
 
 int main()
 {
     system("title CENACE");
     system("COLOR 0B");
     system("cls");
-    CENACE_intro();
+//    CENACE_intro();
     menu();
     if(exit_CENACE)
     {
@@ -74,11 +75,17 @@ start:
             cerr << "\n\tError opening the file!\n";
         }
         string line;
-        while (getline(file, line)) {
+        while (getline(file, line))
+        {
+            if(line.length() == 0)
+            {
+                continue;
+            }
             string key = line.substr(0, 9);
-            string value = line.substr(9, line.length()-1);
+            string value = line.substr(9, line.length()-9);
             bst.insert(key);
             hashMap.insert({key, value});
+//            cout << "map = "<< key << " " << value << endl;
         }
 
         // Clearing previous stack
@@ -393,24 +400,9 @@ void inputmove()
         // Need to rewrite this part of code for CSV file and implement Stack, BST, Hash map here.
         // I am adding a temporary code to give random move for now
 
-        while(true)
-        {
-            //Note that: 1. 'move' is a char.
-            //           2. adding 48 converts an int into a char.
-            player_move = (char)((rand() % 10) + 48 + 1);
-            if(gameboard[(int)(player_move - 48) - 1] == ' ')//Accepting computer's input only if there is a blank space
-            {
-                gameboard[9] = '\0'; //no use, just for safety
-                break;
-            }
-            else continue;
-        }
-
-
-        //pushing the moves into a stack
         string gameboard_string(gameboard);
 
-        // Replacing black spaces in th board with '-'s. Easy to recognize.
+        // Replacing spaces with '-'s
         for(int i = 0; i < gameboard_string.length(); i++)
         {
             if(gameboard_string[i] == ' ')
@@ -418,6 +410,91 @@ void inputmove()
                 gameboard_string[i] = '-';
             }
         }
+
+        if(bst.find(gameboard_string) != bst.end())
+        {
+            string value = hashMap[gameboard_string];
+            vector<int > value_points ;//= splitString(gameboard_string, ',');
+            int container[value_points.size()];
+            string s = "";
+            int index = -1;
+            for(auto u : value)
+            {
+                if(u != ',')
+                {
+                    s += u;
+                    if(s == "-1")
+                    {
+                        s = "";
+                        index++;
+                        continue;
+                    }
+                }
+
+
+                if(u == ',' && s != "")
+                {
+                    index++;
+                    if(s != "-1")
+                    {
+
+                        int t = stoi(s);
+
+                        for(int i =0; i < t; ++i)
+                        {
+                            value_points.push_back(index);
+
+
+                        }
+                        s = "";
+                    }
+
+
+                }
+            }
+
+
+            int chosen_index =  (rand() % (value_points.size() - 1));
+            player_move = (char)(value_points[chosen_index] + 48 + 1);
+
+        }
+
+
+        else
+        {
+
+            while(true)
+            {
+                //Note that: 1. 'move' is a char.
+                //           2. adding 48 converts an int into a char.
+                player_move = (char)((rand() % 10) + 48 + 1);
+                if(gameboard[(int)(player_move - 48) - 1] == ' ')//Accepting computer's input only if there is a blank space
+                {
+                    gameboard[9] = '\0'; //no use, just for safety
+                    break;
+                }
+                else continue;
+            }
+
+            bst.insert(gameboard_string);
+            string value_for_hashmap = ",";
+            for(auto u : gameboard_string)
+            {
+                if(u == '-')
+                {
+                    value_for_hashmap += "2,";
+                }
+                else
+                {
+                    value_for_hashmap += "-1,";
+                }
+            }
+            hashMap.insert({gameboard_string, value_for_hashmap});
+        }
+
+        //pushing the moves into a stack
+        // Replacing black spaces in th board with '-'s. Easy to recognize.
+
         O_paths.push(gameboard_string + "," + player_move);
         cout << O_paths.top();
 
@@ -630,7 +707,7 @@ int space_in_board()
 
 void updateLearning_data()
 {
-    ofstream csvFile("Learning_Data.csv", ios_base::app);
+    ofstream csvFile("Learning_Data.csv");
 
     // Check if the file opened successfully
     if (!csvFile.is_open())
@@ -649,24 +726,25 @@ void updateLearning_data()
         bool flag  = true;
         for(auto u: path)
         {
+            if(u == ',')
+            {
+                flag = false;
+            }
             if(flag)
                 board += u;
             else
                 given_move = (int)(u - 48);
 
-            if(u == ',')
-            {
-                flag = false;
-            }
 
         }
 
         // Write a single line string to the CSV file
-        string values = "-1,2,2,2,-1,2,2,2,2,"; //we will get this from the hash map
+        string values = hashMap[board]; //we will get this from the hash map
+
         // and, yes, the last comma is important
-        string csv_line = board;
+        string updated_values = ",";
         int counter = 0;
-        string tmp;
+        string tmp = "";
 
         // Constructing the string for CSV file
 
@@ -678,7 +756,7 @@ void updateLearning_data()
                 tmp += u;
                 continue;
             }
-            if(u == ',')
+            if(u == ',' && tmp != "")
             {
                 counter ++;
                 int intpoint = stoi(tmp);
@@ -691,12 +769,19 @@ void updateLearning_data()
                     if(intpoint >= MAX_POINT) intpoint = MAX_POINT;
                     else if(intpoint <= MIN_POINT) intpoint = MIN_POINT;
                 }
-                csv_line += to_string(intpoint) + ",";
+                updated_values += to_string(intpoint) + ",";
                 tmp = "";
-
             }
         }
-        csvFile << csv_line + "\n";
+        hashMap[board] = updated_values;
+
+    }
+
+
+    set<string>::iterator it;
+    for (it = bst.begin(); it != bst.end(); ++it) {
+        string csv_line = *it + hashMap[*it] + "\n";
+        csvFile << csv_line;
     }
 
     // Close the file
@@ -763,7 +848,7 @@ menu:
         cout << "\n\tContinue? (y/n) --> ";
 
         auto_train = getch();
-        cout << "%c", auto_train;
+        cout << auto_train;
 
         if(auto_train == 'y' || auto_train == 'Y')
         {
@@ -994,4 +1079,19 @@ void scoreUpdate()
         CENACEscore += DRAW_REWORD;
         humanScore += DRAW_REWORD;
     }
+}
+
+
+vector<string> splitString(const string &str, char delimiter)
+{
+    vector<string> tokens;
+    stringstream ss(str);
+    string token;
+
+    while (getline(ss, token, delimiter))
+    {
+        tokens.push_back(token);
+    }
+
+    return tokens;
 }
