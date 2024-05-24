@@ -42,8 +42,230 @@ void updateGraphing_data();
 void scoreUpdate();
 vector<string> splitString(const string &str, char delimiter);
 
+int ratingPoint = 0;
+string username = "";
+
+
+// Custom comparator for the priority queue to ensure max-heap behavior
+struct Compare {
+    bool operator()(const pair<int, string>& a, const pair<int, string>& b) {
+        return a.first < b.first; // Compare based on the rating
+    }
+};
+
+
+
+ // Create a priority queue with the custom comparator
+    priority_queue<pair<int, string>, vector<pair<int, string>>, Compare> pq;
+
+    // Create a map to store the name-rating pairs
+    unordered_map<string, int> nameRatings;
+
+
+
+
+
+
+// Function to push or update the rating of a name in the priority queue
+void updatePriorityQueue(priority_queue<pair<int, string>, vector<pair<int, string>>, Compare>& pq, unordered_map<string, int>& nameRatings, const string& name, int rating) {
+    // Check if the name already exists in the map
+    if (nameRatings.find(name) != nameRatings.end()) {
+        // Update the rating if the new rating is higher
+        if (nameRatings[name] < rating) {
+            nameRatings[name] = rating;
+            pq.push({rating, name});
+        }
+    } else {
+        // Add the new name-rating pair
+        nameRatings[name] = rating;
+        pq.push({rating, name});
+    }
+}
+
+// Function to print the name with the highest rating
+void printHighestRatedName(priority_queue<pair<int, string>, vector<pair<int, string>>, Compare>& pq, unordered_map<string, int>& nameRatings) {
+    while (!pq.empty()) {
+        pair<int, string> maxRatingPair = pq.top();
+        if (maxRatingPair.first == nameRatings[maxRatingPair.second]) {
+        printf("\n      ________ Top Rank  ________");
+        printf("\n      ___________________________");
+        printf("\n     |              /            |");
+        cout<<"\n     | Name:"<<maxRatingPair.second<<"       Score:"<< maxRatingPair.first<<" |";
+        printf("\n     |_____________/_____________|");
+
+        return;
+        } else {
+            pq.pop();
+        }
+    }
+    cout << "The priority queue is empty.\n";
+}
+
+// Function to write all data from the priority queue to a CSV file
+void writeToCSV(priority_queue<pair<int, string>, vector<pair<int, string>>, Compare> pq, const unordered_map<string, int>& nameRatings, const string& filename) {
+    ofstream file(filename);
+
+    if (!file.is_open()) {
+        cerr << "Unable to open file: " << filename << "\n";
+        return;
+    }
+
+    // Write the header
+    file << "Name,Rating\n";
+
+    // Write all elements from the priority queue to the CSV file
+    while (!pq.empty()) {
+        pair<int, string> maxRatingPair = pq.top();
+        pq.pop();
+        if (maxRatingPair.first == nameRatings.at(maxRatingPair.second)) {
+            file << maxRatingPair.second << "," << maxRatingPair.first << "\n";
+        }
+    }
+
+    file.close();
+    cout << "Data successfully written to " << filename << "\n";
+}
+
+// Function to load data from a CSV file into the priority queue and map
+void loadFromCSV(priority_queue<pair<int, string>, vector<pair<int, string>>, Compare>& pq, unordered_map<string, int>& nameRatings, const string& filename) {
+    ifstream file(filename);
+
+    if (!file.is_open()) {
+        cerr << "Unable to open file: " << filename << "\n";
+        return;
+    }
+
+    string line;
+    // Skip the header line
+    getline(file, line);
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string name;
+        int rating;
+
+        getline(ss, name, ',');
+        ss >> rating;
+
+        updatePriorityQueue(pq, nameRatings, name, rating);
+    }
+
+    file.close();
+    cout << "Data successfully loaded from " << filename << "\n";
+}
+
+
+
+
+
+
+
+
+
+
+void rateTheMove(char ind){
+
+
+        string gameboard_string(gameboard);
+
+
+        // Replacing spaces with '-'s
+        for(int i = 0; i < gameboard_string.length(); i++)
+        {
+            if(gameboard_string[i] == ' ')
+            {
+                gameboard_string[i] = '-';
+            }
+            if(gameboard_string[i] == 'O')
+                gameboard_string[i] = 'X';
+            if(gameboard_string[i] == 'X')
+                gameboard_string[i] = 'O';
+        }
+
+        if(bst.find(gameboard_string) != bst.end())
+        {
+
+
+            string value = hashMap[gameboard_string];
+            vector<int > value_points ;//= splitString(gameboard_string, ',');
+            int container[value_points.size()];
+            string s = "";
+            int index = -1;
+            int bestMoveRating = -1;
+            for(auto u : value)
+            {
+                if(u != ',')
+                {
+                    s += u;
+                    if(s == "-1")
+                    {
+                        s = "";
+                        index++;
+                        continue;
+                    }
+                }
+
+
+                if(u == ',' && s != "")
+                {
+                    index++;
+                    if(s != "-1")
+                    {
+
+                        int t = stoi(s);
+                        if(bestMoveRating > t)
+                        bestMoveRating = t;
+
+                        value_points.push_back(t);
+
+
+
+                        s = "";
+                    }
+
+
+                }
+            }
+
+            int tmp = ind -'0'-1;
+           ratingPoint += value_points[tmp];
+
+
+
+
+}
+
+}
+
+
+
+
+
+
+
+
+
+
+
 int main()
 {
+    cout << "Enter your username(at least 3 character): " ;
+    cin >> username;
+
+
+
+
+    // Load the data from the CSV file at the beginning
+   //loadFromCSV(pq, nameRatings, "ratings.csv");
+
+
+
+
+
+
+
+
+
     system("title CENACE");
     system("COLOR 0B");
     system("cls");
@@ -67,6 +289,11 @@ start:
 
     while(true)
     {
+            // Load the data from the CSV file at the beginning
+          loadFromCSV(pq, nameRatings, "ratings.csv");
+
+
+
         // Constructing the tree
         bst.clear();
         ifstream file("Learning_Data.csv");
@@ -92,7 +319,7 @@ start:
         while(!O_paths.empty())
             O_paths.pop();
 
-        player = 1;
+        player = ((rand() % 2)  + 1);
         newboard();
         choose_player();
         do
@@ -163,6 +390,7 @@ start:
                 printboard();
                 if(player == 1)
                 {
+                    ratingPoint /= 10;
                     cout << "\n\n\t>> Player-O won! <<";
                     if(auto_train != 'y' && auto_train != 'Y')
                     {
@@ -182,6 +410,8 @@ start:
                     }
                 }
 
+
+
                 updateLearning_data();
                 updateGraphing_data();
             }
@@ -197,10 +427,25 @@ start:
                     Beep(500,250);
                 }
 
+                 ratingPoint = ratingPoint/2;
+
+
+
                 updateLearning_data();
                 updateGraphing_data();
             }
 
+            if(win == 1 || win == -1){
+                updatePriorityQueue(pq, nameRatings, username, ratingPoint);
+
+             // Print the name with the highest rating
+                printHighestRatedName(pq, nameRatings);
+
+                // Write the updated data to the CSV file before exiting
+                writeToCSV(pq, nameRatings, "ratings.csv");
+
+                getch();
+            }
             player ++;
 
         }
@@ -278,6 +523,8 @@ start:
             }
         }
         match ++;
+
+
     }
 }
 
@@ -299,6 +546,8 @@ void inputmove()
         {
             cout << "\n\n\tEnter your move (1-9): ";
             player_move = getch();
+
+            rateTheMove(player_move);
         }
 
         //For auto train. No need to touch this one.
@@ -631,6 +880,10 @@ void printboard()
     //printf("\n\t\t 1|2|3");
     //printf("\n\t\t 4|5|6");
     //printf("\n\t\t 7|8|9\n");
+
+
+
+    printHighestRatedName(pq, nameRatings);
     if(auto_train == 'y' || auto_train == 'Y')
     {
         printf("\n\t      Match:%4d", match);
